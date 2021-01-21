@@ -6,14 +6,14 @@ from torch.cuda.amp import autocast, GradScaler
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 #訓練
-def train_one_epoch(epoch, model, loss_fn, optimizer, train_loader, device, scheduler=None, schd_batch_update=False):
+def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, device, scheduler=None, schd_batch_update=False):
     model.train()
 
     t = time.time()
     running_loss = None
 
     scaler = GradScaler()   
-    
+
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
     for step, (imgs, image_labels) in pbar:
         imgs = imgs.to(device).float()
@@ -33,7 +33,7 @@ def train_one_epoch(epoch, model, loss_fn, optimizer, train_loader, device, sche
             else:
                 running_loss = running_loss * .99 + loss.item() * .01
 
-            if ((step + 1) %  CFG['accum_iter'] == 0) or ((step + 1) == len(train_loader)):
+            if ((step + 1) %  config['accum_iter'] == 0) or ((step + 1) == len(train_loader)):
                 # may unscale_ here if desired (e.g., to allow clipping unscaled gradients)
 
                 scaler.step(optimizer)
@@ -43,7 +43,7 @@ def train_one_epoch(epoch, model, loss_fn, optimizer, train_loader, device, sche
                 if scheduler is not None and schd_batch_update:
                     scheduler.step()
 
-            if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(train_loader)):
+            if ((step + 1) % config['verbose_step'] == 0) or ((step + 1) == len(train_loader)):
                 description = f'epoch {epoch} loss: {running_loss:.4f}'
                 
                 pbar.set_description(description)
@@ -53,7 +53,7 @@ def train_one_epoch(epoch, model, loss_fn, optimizer, train_loader, device, sche
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 # 評価    
-def valid_one_epoch(epoch, model, loss_fn, val_loader, device, scheduler=None, schd_loss_update=False):
+def valid_one_epoch(epoch, model, config,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False):
     model.eval()
 
     t = time.time()
@@ -77,7 +77,7 @@ def valid_one_epoch(epoch, model, loss_fn, val_loader, device, scheduler=None, s
         loss_sum += loss.item()*image_labels.shape[0]
         sample_num += image_labels.shape[0]  
 
-        if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
+        if ((step + 1) % config['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
             description = f'epoch {epoch} loss: {loss_sum/sample_num:.4f}'
             pbar.set_description(description)
     
