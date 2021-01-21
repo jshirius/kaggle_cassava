@@ -17,7 +17,7 @@ def timer(message: str):
     print(f'[{message}] done in {elapsed_time / 60:.1f} min.')
 
 
-def set_seed(seed: int = 1029):
+def set_seed(seed: int = 42):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)

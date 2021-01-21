@@ -1,16 +1,18 @@
 # 訓練モデル
-import efficientnet.tfkeras as efn
+#import efficientnet.tfkeras as efn
 import tensorflow as tf
 import tensorflow.keras.layers as L
 import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, Sequential, losses, metrics, Model
 from tensorflow.keras.callbacks import EarlyStopping
-
+import torch
+from torch import nn
+import timm
 
 # ====================================================
 # MODEL　ResNext
 # ====================================================
-import torch
+
 class CustomResNext(nn.Module):
     def __init__(self, model_name='resnext50_32x4d', pretrained=False):
         super().__init__()
@@ -32,6 +34,7 @@ class CassvaImgClassifier(nn.Module):
         super().__init__()
         self.model = timm.create_model(model_arch, pretrained=pretrained)
         n_features = self.model.classifier.in_features
+        #TODO:dropoutあたり入れてみるか
         self.model.classifier = nn.Linear(n_features, n_class)
         '''
         self.model.classifier = nn.Sequential(
@@ -42,6 +45,8 @@ class CassvaImgClassifier(nn.Module):
         '''
     def forward(self, x):
         x = self.model(x)
+
+
         return x
         
         
