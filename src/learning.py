@@ -2,7 +2,9 @@
 
 import time
 from tqdm import tqdm
+import torch
 from torch.cuda.amp import autocast, GradScaler
+import numpy as np
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 #訓練
@@ -53,7 +55,7 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 # 評価    
-def valid_one_epoch(epoch, model, config,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False):
+def valid_one_epoch(epoch, config, model,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False):
     model.eval()
 
     t = time.time()

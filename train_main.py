@@ -51,7 +51,8 @@ CFG = {
     'accum_iter': 2, # suppoprt to do batch accumulation for backprop with effectively larger batch size
     'verbose_step': 1,
     #'device': 'cuda:0'
-    'device': 'cpu' #ローカルPCのときの設定
+    'device': 'cpu', #ローカルPCのときの設定
+    'debug': True,
 }
 
 def get_train_transforms():
@@ -86,7 +87,10 @@ if __name__ == '__main__':
     set_seed()
 
     #訓練データを読み込む
-    train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv')
+    if(CFG["debug"] == True):
+        train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv' , nrows = 50)
+    else:
+        train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv')
     print(train)
 
     #ラベルを元に分ける
@@ -122,10 +126,10 @@ if __name__ == '__main__':
         loss_fn = nn.CrossEntropyLoss().to(device)
         
         for epoch in range(CFG['epochs']):
-            train_one_epoch(epoch, model, CFG,loss_tr, optimizer, train_loader, device, scheduler=scheduler, schd_batch_update=False)
+            train_one_epoch(epoch, CFG, model ,loss_tr, optimizer, train_loader, device, scheduler=scheduler, schd_batch_update=False)
 
             with torch.no_grad():
-                valid_one_epoch(epoch, model, CFG,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False)
+                valid_one_epoch(epoch, CFG, model,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False)
 
             torch.save(model.state_dict(),'{}_fold_{}_{}'.format(CFG['model_arch'], fold, epoch))
             

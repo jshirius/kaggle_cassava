@@ -62,7 +62,7 @@ def prepare_dataloader(df, trn_idx, val_idx, param:dict, get_train_transforms, g
     #valid_ds = CassavaDataset(valid_, data_root, transforms=get_valid_transforms(), output_label=True)
     
     train_ds = TrainDataset(train_, data_root, transform = get_train_transforms())
-    valid_ds = TestDataset(valid_, data_root, transform = get_valid_transforms())
+    valid_ds = TrainDataset(valid_, data_root, transform = get_valid_transforms())
 
 
     train_loader = torch.utils.data.DataLoader(
