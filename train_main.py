@@ -37,7 +37,7 @@ from albumentations.pytorch import ToTensorV2
 CFG = {
     'fold_num': 5,
     'seed': 42,
-    'model_arch': 'tf_efficientnet_b4_ns',
+    'model_arch': 'resnext50_32x4d', #resnext50_32x4d #tf_efficientnet_b4_ns
     'img_size': 512,
     'epochs': 10,
     'train_bs': 16,
@@ -112,6 +112,9 @@ if __name__ == '__main__':
 
         device = torch.device(CFG['device'])
         
+        ###########################
+        #モデルの読み込み
+        ###########################
         model = CassvaImgClassifier(CFG['model_arch'], train.label.nunique(), pretrained=True).to(device)
 
         #Feature Scaling(正規化)を作成する

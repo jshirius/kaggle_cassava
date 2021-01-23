@@ -13,6 +13,7 @@ import timm
 # MODEL　ResNext
 # ====================================================
 #https://www.kaggle.com/takiyu/cassava-resnext50-32x4d-starter-training
+#現状、CassvaImgClassifierとほぼ同じ処理なので、以下の関数は利用しなくて良い
 class CustomResNext(nn.Module):
     def __init__(self, model_name='resnext50_32x4d', pretrained=False):
         super().__init__()
@@ -33,7 +34,14 @@ class CassvaImgClassifier(nn.Module):
     def __init__(self, model_arch, n_class, pretrained=False):
         super().__init__()
         self.model = timm.create_model(model_arch, pretrained=pretrained)
-        n_features = self.model.classifier.in_features
+
+        if("resnext50_32x4d" in model_arch):
+            #resnextの場合
+            n_features = self.model.fc.in_features
+        else:    
+            #EfficientNetなど
+            n_features = self.model.classifier.in_features
+
         #TODO:dropoutあたり入れてみるか
         self.model.classifier = nn.Linear(n_features, n_class)
         '''
