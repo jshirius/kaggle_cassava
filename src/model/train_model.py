@@ -12,7 +12,7 @@ import timm
 # ====================================================
 # MODEL　ResNext
 # ====================================================
-
+#https://www.kaggle.com/takiyu/cassava-resnext50-32x4d-starter-training
 class CustomResNext(nn.Module):
     def __init__(self, model_name='resnext50_32x4d', pretrained=False):
         super().__init__()
