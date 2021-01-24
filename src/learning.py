@@ -85,13 +85,16 @@ def valid_one_epoch(epoch, config, model,loss_fn, val_loader, device, scheduler=
     
     image_preds_all = np.concatenate(image_preds_all)
     image_targets_all = np.concatenate(image_targets_all)
-    print('validation multi-class accuracy = {:.4f}'.format((image_preds_all==image_targets_all).mean()))
+    accuracy = (image_preds_all==image_targets_all).mean()
+    print('validation multi-class accuracy = {:.4f}'.format(accuracy))
     
     if scheduler is not None:
         if schd_loss_update:
             scheduler.step(loss_sum/sample_num)
         else:
             scheduler.step()
+
+    return accuracy
 
 #推論
 def inference_one_epoch(model, data_loader, device):

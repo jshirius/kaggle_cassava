@@ -36,10 +36,11 @@ from albumentations.pytorch import ToTensorV2
 #設定
 CFG = {
     'fold_num': 5,
+    'fold_limit': 2, #foldで実際にやるもの fold_num以下
     'seed': 42,
     'model_arch': 'resnext50_32x4d', #resnext50_32x4d #tf_efficientnet_b4_ns
     'img_size': 512,
-    'epochs': 10,
+    'epochs': 10, #epochsを10にする
     'train_bs': 16,
     'valid_bs': 32,
     'T_0': 10,
@@ -88,7 +89,7 @@ if __name__ == '__main__':
 
     #訓練データを読み込む
     if(CFG["debug"] == True):
-        train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv' , nrows = 50)
+        train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv' , nrows = 30)
     else:
         train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv')
     print(train)
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     for fold, (trn_idx, val_idx) in enumerate(folds):
 
         # we'll train fold 0 first
-        if fold > 0:
+        if CFG["fold_limit"] <= fold:
             break 
 
         print('Training with {} started'.format(fold))
@@ -128,14 +129,25 @@ if __name__ == '__main__':
         loss_tr = nn.CrossEntropyLoss().to(device) #MyCrossEntropyLoss().to(device)
         loss_fn = nn.CrossEntropyLoss().to(device)
         
+        best_accuracy = 0
         for epoch in range(CFG['epochs']):
             train_one_epoch(epoch, CFG, model ,loss_tr, optimizer, train_loader, device, scheduler=scheduler, schd_batch_update=False)
 
             with torch.no_grad():
-                valid_one_epoch(epoch, CFG, model,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False)
+                accuracy = valid_one_epoch(epoch, CFG, model,loss_fn, val_loader, device, scheduler=None, schd_loss_update=False)
+
+                print("accuracy")
+                print(accuracy)
+                if(best_accuracy < accuracy):
+                    t = "best_accuracy_update  accuracy:%s fold:%s epoch:%s" % (str(accuracy), str(fold), str(epoch))
+                    print(t)
+                    best_accuracy = accuracy
+                    torch.save(model.state_dict(),'{}_fold_{}'.format(CFG['model_arch'], fold))
 
             torch.save(model.state_dict(),'{}_fold_{}_{}'.format(CFG['model_arch'], fold, epoch))
             
+        
+
         #torch.save(model.cnn_model.state_dict(),'{}/cnn_model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
         del model, optimizer, train_loader, val_loader, scaler, scheduler
         torch.cuda.empty_cache()
