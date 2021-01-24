@@ -38,12 +38,12 @@ class CassvaImgClassifier(nn.Module):
         if("resnext50_32x4d" in model_arch):
             #resnextの場合
             n_features = self.model.fc.in_features
+            self.model.fc = nn.Linear(n_features, n_class)
         else:    
             #EfficientNetなど
             n_features = self.model.classifier.in_features
-
-        #TODO:dropoutあたり入れてみるか
-        self.model.classifier = nn.Linear(n_features, n_class)
+            #TODO:dropoutあたり入れてみるか
+            self.model.classifier = nn.Linear(n_features, n_class)
         '''
         self.model.classifier = nn.Sequential(
             nn.Dropout(0.3),

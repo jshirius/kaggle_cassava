@@ -24,7 +24,7 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
         #print(image_labels.shape, exam_label.shape)
         with autocast():
             image_preds = model(imgs)   #output = model(input)
-            #print(image_preds.shape, exam_pred.shape)
+            #print(image_preds.shape)
 
             loss = loss_fn(image_preds, image_labels)
             
