@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 import torch
-
+import cv2
 
 @contextmanager
 def timer(message: str):
@@ -39,4 +39,14 @@ def init_logger(log_file='train.log'):
     return logger
 
 
+def transform_image_plot(img_path, transform, figsize =(8, 5) ):
+    #画像出力用の関数
+    image = cv2.imread(img_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Augment an image
+    transformed = transform(image=image)
+    transformed_image = transformed["image"]
+    plt.figure(figsize=figsize)
+    plt.imshow(transformed_image);
 
