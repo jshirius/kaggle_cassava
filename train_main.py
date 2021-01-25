@@ -41,8 +41,9 @@ CFG = {
     'model_arch': 'resnext50_32x4d', #resnext50_32x4d #tf_efficientnet_b4_ns
     'img_size': 512,
     'epochs': 10, #epochsを10にする
-    'train_bs': 16,
+    'train_bs': 32,
     'valid_bs': 32,
+    "drop_rate" : 0.2222, #dropout
     'T_0': 10,
     'lr': 1e-4,
     'min_lr': 1e-6,
@@ -116,7 +117,7 @@ if __name__ == '__main__':
         ###########################
         #モデルの読み込み
         ###########################
-        model = CassvaImgClassifier(CFG['model_arch'], train.label.nunique(), pretrained=True).to(device)
+        model = CassvaImgClassifier(CFG['model_arch'], train.label.nunique(), pretrained=True, drop_rate=CFG["drop_rate"]).to(device)
 
         #Feature Scaling(正規化)を作成する
         scaler = GradScaler()   

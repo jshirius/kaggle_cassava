@@ -31,9 +31,9 @@ class CustomResNext(nn.Module):
 #https://pypi.org/project/timm/
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug/edit
 class CassvaImgClassifier(nn.Module):
-    def __init__(self, model_arch, n_class, pretrained=False):
+    def __init__(self, model_arch, n_class, pretrained=False, drop_rate = 0.0):
         super().__init__()
-        self.model = timm.create_model(model_arch, pretrained=pretrained)
+        self.model = timm.create_model(model_arch, pretrained=pretrained, drop_rate= drop_rate)
 
         if("resnext50_32x4d" in model_arch):
             #resnextの場合
