@@ -60,19 +60,26 @@ CFG = {
 def get_train_transforms():
     return Compose([
             RandomResizedCrop(CFG['img_size'], CFG['img_size']),
-            Transpose(p=0.5),
+            Transpose(p=0.5), #転換
             HorizontalFlip(p=0.5),
             VerticalFlip(p=0.5),
-            ShiftScaleRotate(p=0.5),
-            HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5),
-            RandomBrightnessContrast(brightness_limit=(-0.1,0.1), contrast_limit=(-0.1, 0.1), p=0.5),
-            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], max_pixel_value=255.0, p=1.0),
-            CoarseDropout(p=0.5),
+            ShiftScaleRotate(p=0.5), #アフィン変換をランダムに適用します。入力を変換、スケーリング、回転します
+            HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5), #色彩などを変更する
+            RandomBrightnessContrast(brightness_limit=(-0.1,0.1), contrast_limit=(-0.1, 0.1), p=0.5), # 輝度
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], max_pixel_value=255.0, p=1.0), #ピクセル値を255 = 2 ** 8-1で除算し、チャネルごとの平均を減算し、チャネルごとのstdで除算します
+            CoarseDropout(p=0.5),#粗いドロップアウト
             Cutout(p=0.5),
+            #ToGray(p=0.01),
             ToTensorV2(p=1.0),
+
         ], p=1.)
-  
-        
+
+# 参考に0.9を叩き出したもの
+# https://www.kaggle.com/takiyu/cassava-leaf-disease-tpu-v2-pods-inference/
+#Pixel-level transforms, Crops(画像の中央領域をトリミング)
+# ここから過去のコンペのナレッジ
+# https://www.kaggle.com/stonewst98/what-a-pity-only-0-0001-away-from-0-77/notebook
+# ToGray
 def get_valid_transforms():
     return Compose([
             CenterCrop(CFG['img_size'], CFG['img_size'], p=1.),
