@@ -133,6 +133,7 @@ def inference_single(model_name, model_root_path, param, transform):
     """
     
     folds = param["fold_num"]
+    tst_preds = []
     for fold in range(folds): 
         # we'll train fold 0 first
         if param["fold_limit"] <= fold:
@@ -166,16 +167,17 @@ def inference_single(model_name, model_root_path, param, transform):
             model.load_state_dict(torch.load(load_path))
             
             with torch.no_grad():
-                for _ in range(CFG['tta']):
+                for _ in range(param['tta']):
                     #print(model)
                     tst_preds += [param['weights'][i]/sum(param['weights'])/param['tta']*inference_one_epoch(model, tst_loader, device)]
 
-        tst_preds = np.mean(tst_preds, axis=0) 
+        #tst_preds = np.mean(tst_preds, axis=0) 
         
         del model
         torch.cuda.empty_cache()
         
-        return tst_preds
+    tst_preds = np.mean(tst_preds, axis=0) 
+    return tst_preds
     
     
         

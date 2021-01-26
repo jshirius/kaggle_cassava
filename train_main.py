@@ -58,9 +58,9 @@ CFG = {
     'debug': True,
     'train_mode' :True,
     'inference_mode' :True,
-    'inference_model_path' : ".", #推論時のモデルパス
+    'inference_model_path' : "./", #推論時のモデルパス
     'tta': 4, #Inference用 どこの
-    'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか
+    'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか 0始まり
     'weights': [1,1,1] ,#Inference用比率
 }
 
