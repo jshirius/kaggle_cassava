@@ -5,6 +5,11 @@ from tqdm import tqdm
 import torch
 from torch.cuda.amp import autocast, GradScaler
 import numpy as np
+import pandas as pd
+from src.data_set import TestDataset, LABEL_NUM
+from src.model.train_model import CassvaImgClassifier
+import os
+
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 #訓練
@@ -112,3 +117,65 @@ def inference_one_epoch(model, data_loader, device):
     
     image_preds_all = np.concatenate(image_preds_all, axis=0)
     return image_preds_all
+
+
+def inference_single(model_name, model_root_path, param, transform):
+    """ fold対応の推論処理
+
+    Args:
+        model_name ([type]): モデル名
+        model_root_path ([type]): モデルがあるroot path
+        param ([type]): 設定
+        transform ([type]): [description]
+
+    Returns:
+        [type]: 推論の結果
+    """
+    
+    folds = param["fold_num"]
+    for fold in range(folds): 
+        # we'll train fold 0 first
+        if param["fold_limit"] <= fold:
+            break 
+
+        print('Inference fold {} started'.format(fold))
+
+ 
+        
+        test = pd.DataFrame()
+        test['image_id'] = list(os.listdir('../input/cassava-leaf-disease-classification/test_images/'))
+        test_ds = TestDataset(test, '../input/cassava-leaf-disease-classification/test_images/', transform=transform())
+
+        
+        tst_loader = torch.utils.data.DataLoader(
+            test_ds, 
+            batch_size=param['valid_bs'],
+            num_workers=param['num_workers'],
+            shuffle=False,
+            pin_memory=False,
+        )
+
+        device = torch.device(param['device'])
+        model = CassvaImgClassifier(model_name, LABEL_NUM).to(device)
+        
+        tst_preds = []
+        
+        for i, epoch in enumerate(param['used_epochs']):    
+            
+            load_path = model_root_path + '{}_fold_{}_{}'.format(model_name, fold, epoch)
+            model.load_state_dict(torch.load(load_path))
+            
+            with torch.no_grad():
+                for _ in range(CFG['tta']):
+                    #print(model)
+                    tst_preds += [param['weights'][i]/sum(param['weights'])/param['tta']*inference_one_epoch(model, tst_loader, device)]
+
+        tst_preds = np.mean(tst_preds, axis=0) 
+        
+        del model
+        torch.cuda.empty_cache()
+        
+        return tst_preds
+    
+    
+        

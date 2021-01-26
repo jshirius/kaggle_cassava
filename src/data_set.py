@@ -6,7 +6,8 @@ from torch.utils.data import Dataset,DataLoader
 import cv2
 
 
-
+#ラベルの最大数
+LABEL_NUM = 5
 
 class TrainDataset(Dataset):
     def __init__(self, df, data_root,transform=None):
