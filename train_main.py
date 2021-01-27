@@ -188,7 +188,7 @@ if __name__ == '__main__':
     if(CFG["inference_mode"] == True):
         #推論モード
         #res net
-        tst_preds = inference_single("resnext50_32x4d", CFG["inference_model_path"], CFG, get_valid_transforms)
+        tst_preds = inference_single("resnext50_32x4d", CFG["inference_model_path"], CFG, get_inference_transforms)
     
         #tf_efficientnet_b4_ns
         #tst_preds = inference_single("tf_efficientnet_b4_ns", "../input/cassava-tf-efficientnet-b4-ns-train/")
