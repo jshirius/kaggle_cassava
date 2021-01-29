@@ -25,7 +25,7 @@ from torch.cuda.amp import autocast, GradScaler
 from albumentations import (
     HorizontalFlip, VerticalFlip, IAAPerspective, ShiftScaleRotate, CLAHE, RandomRotate90,
     Transpose, ShiftScaleRotate, Blur, OpticalDistortion, GridDistortion, HueSaturationValue,
-    IAAAdditiveGaussianNoise, GaussNoise, MotionBlur, MedianBlur, IAAPiecewiseAffine, RandomResizedCrop,
+    IAAAdditiveGaussianNoise, GaussNoise, MotionBlur, MedianBlur, IAAPiecewiseAffine, RandomResizedCrop,ToGray,
     IAASharpen, IAAEmboss, RandomBrightnessContrast, Flip, OneOf, Compose, Normalize, Cutout, CoarseDropout, ShiftScaleRotate, CenterCrop, Resize
 )
 
@@ -62,6 +62,7 @@ CFG = {
     'tta': 4, #Inference用 どこの
     'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか 0始まり
     'weights': [1,1,1] ,#Inference用比率
+    "noisy_label_csv" :"./src/data/noisy_label.csv" #ノイズラベル修正用のcsvファイルの場所(ノイズ補正しない場合は空白にする)
 }
 
 def get_train_transforms():
@@ -76,7 +77,7 @@ def get_train_transforms():
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], max_pixel_value=255.0, p=1.0), #ピクセル値を255 = 2 ** 8-1で除算し、チャネルごとの平均を減算し、チャネルごとのstdで除算します
             CoarseDropout(p=0.5),#粗いドロップアウト
             Cutout(p=0.5),
-            #ToGray(p=0.01),
+            ToGray(p=0.01), #これを反映させたほうがスコアが上がる 0.001上がった
             ToTensorV2(p=1.0),
 
         ], p=1.)
@@ -108,8 +109,14 @@ def get_inference_transforms():
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], max_pixel_value=255.0, p=1.0),
             ToTensorV2(p=1.0),
         ], p=1.)
-        
 
+#以下のパターンも試す   
+# ものすごくスコアが悪くなった    
+#def get_test_transforms():
+#    return A.Compose([
+#            A.Resize(height=img_size, width=img_size, p=1.0),
+#            ToTensorV2(p=1.0),
+#        ], p=1.0)
 
 if __name__ == '__main__':
 
@@ -122,6 +129,14 @@ if __name__ == '__main__':
     else:
         train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv')
     print(train)
+
+    #noisy labelを読み込む
+    if(len(CFG["noisy_label_csv"]) > 0):
+        noisy_label = pd.read_csv(CFG["noisy_label_csv"])
+        #clean labelで推測された方に置き換える
+        train["label"] = noisy_label["guess_label"]
+        print("train label clean change")
+
 
     if(CFG["train_mode"] == True):
         #ラベルを元に分ける
