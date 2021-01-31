@@ -47,7 +47,7 @@ CFG = {
     'fold_num': 5,
     'fold_limit': 2, #foldで実際にやるもの fold_num以下
     'seed': 42,
-    'model_arch': 'resnext50_32x4d', #resnext50_32x4d #tf_efficientnet_b4_ns
+    'model_arch': 'resnext50_32x4d', #resnext50_32x4d #tf_efficientnet_b4_ns #tf_efficientnet_b7_nsはメモリに乗らない #tf_efficientnet_b5_nsはメモリに乗るようだ
     'img_size': 512,
     'epochs': 10, #epochsを10にする
     'train_bs': 32, 
