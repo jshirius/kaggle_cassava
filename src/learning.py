@@ -22,7 +22,7 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
     scaler = GradScaler()   
 
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
-    for step, (imgs, image_labels) in pbar:
+    for step, (imgs, image_labels, file_names) in pbar:
         imgs = imgs.to(device).float()
         image_labels = image_labels.to(device).long()
 

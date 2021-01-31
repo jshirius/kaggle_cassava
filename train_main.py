@@ -18,6 +18,7 @@ import joblib
 from sklearn.metrics import roc_auc_score, log_loss
 from sklearn import metrics
 import timm
+import cv2
 
 import pandas as pd
 import numpy as np
@@ -30,14 +31,16 @@ from albumentations import (
 )
 
 from albumentations.pytorch import ToTensorV2
+import matplotlib.pyplot as plt
 
 """
 import sys
 package_path = '../input/pytorch-image-models/pytorch-image-models-master' #'../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
 sys.path.append(package_path)
-sys.path.append("../input/cassava-script")
 """
 
+#import sys
+#sys.path.insert(0,"fmix") 
 
 #設定
 CFG = {
@@ -160,6 +163,19 @@ if __name__ == '__main__':
 
             #データのローダーを設定する
             train_loader, val_loader = prepare_dataloader(train, trn_idx, val_idx, CFG, get_train_transforms, get_valid_transforms,  data_root='../input/cassava-leaf-disease-classification/train_images/')
+
+
+            #画像を表示する(デバッグ用普段はコメント化)
+            """
+            train_iter = iter(train_loader)
+            images, label, file_name  = train_iter.next()
+            image = images[0]
+            img = image[:,:,0]
+            plt.imshow(img)
+            plt.imsave(file_name[0], img)
+            """
+
+            #print(train_data)
 
             device = torch.device(CFG['device'])
             
