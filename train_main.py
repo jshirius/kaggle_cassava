@@ -31,7 +31,12 @@ from albumentations import (
 
 from albumentations.pytorch import ToTensorV2
 
-
+"""
+import sys
+package_path = '../input/pytorch-image-models/pytorch-image-models-master' #'../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
+sys.path.append(package_path)
+sys.path.append("../input/cassava-script")
+"""
 
 
 #設定
@@ -57,7 +62,7 @@ CFG = {
     'device': 'cpu', #ローカルPCのときの設定
     'debug': True,
     'train_mode' :True,
-    'inference_mode' :True,
+    'inference_mode' :True, #internetONだと提出できないので注意が必要
     'inference_model_path' : "./", #推論時のモデルパス
     'tta': 4, #Inference用 どこの
     'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか 0始まり
