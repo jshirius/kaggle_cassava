@@ -24,6 +24,16 @@ num_classes = 5
 train = pd.read_csv('../input/cassava-leaf-disease-classification/train.csv' , nrows = 120)
 
 data_root = '../input/cassava-leaf-disease-classification/train_images/'
+
+#フォルダ作成
+os.makedirs(folder, exist_ok=True)
+
+#ラベル補正
+noisy_label = pd.read_csv("./src/data/noisy_label.csv")
+#clean labelで推測された方に置き換える
+train["label"] = noisy_label["guess_label"]
+print("train label clean change")
+
 train_X =[]
 train_y = []
 for index, row in train.iterrows():
@@ -39,8 +49,7 @@ train_X = np.array(train_X)
 train_y = np.array(train_y)
 train_y = keras.utils.to_categorical(train_y, num_classes)
 
-#フォルダ作成
-os.makedirs(folder, exist_ok=True)
+
 
 #MixUPを実行する
 generator = MixupGenerator(train_X, train_y, alpha=alpha, batch_size=batch_size )()

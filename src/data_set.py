@@ -13,12 +13,21 @@ import numpy as np
 LABEL_NUM = 5
 
 class TrainDataset(Dataset):
-    def __init__(self, df, data_root,transform=None):
+    def __init__(self, df, data_root, append_data_dict,transform=None):
+        """[summary]
+
+        Args:
+            df ([type]): [description]
+            data_root ([type]): [description]
+            append_data_dict ([dict]): image_path, exist_name
+            transform ([type], optional): [description]. Defaults to None.
+        """
         self.df = df
         self.file_names = df['image_id'].values
         self.labels = df['label'].values
         self.transform = transform
         self.data_root = data_root
+        self.append_data_dict = append_data_dict
         
     def __len__(self):
         return len(self.df)
@@ -26,6 +35,13 @@ class TrainDataset(Dataset):
     def __getitem__(self, idx):
         file_name = self.file_names[idx]
         file_path = f'{self.data_root}/{file_name}'
+
+        #appendの確認
+        if(self.append_data_dict != None):
+            #appendデータ
+            if(self.append_data_dict['exist_name'] in file_name):
+                file_path = self.append_data_dict["image_path"] + "/" + file_name
+            
         image = cv2.imread(file_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if self.transform:
@@ -55,7 +71,7 @@ class TestDataset(Dataset):
         return image
         
 
-def prepare_dataloader(df, trn_idx, val_idx, param:dict, get_train_transforms, get_valid_transforms, data_set_mode = 1, data_root='../input/cassava-leaf-disease-classification/train_images/'):
+def prepare_dataloader(df, trn_idx, val_idx, param:dict, get_train_transforms, get_valid_transforms, data_set_mode = 1, data_root='../input/cassava-leaf-disease-classification/train_images/', append_data_dict:dict=None):
     
     #from catalyst.data.sampler import BalanceClassSampler
     
@@ -63,8 +79,8 @@ def prepare_dataloader(df, trn_idx, val_idx, param:dict, get_train_transforms, g
     valid_ = df.loc[val_idx,:].reset_index(drop=True)
 
     if(data_set_mode == 1):    
-        train_ds = TrainDataset(train_, data_root, transform = get_train_transforms())
-        valid_ds = TrainDataset(valid_, data_root, transform = get_valid_transforms())
+        train_ds = TrainDataset(train_, data_root, append_data_dict,transform = get_train_transforms())
+        valid_ds = TrainDataset(valid_, data_root, append_data_dict,transform = get_valid_transforms())
     else:
         #from fmixが必要
         train_ds = CassavaDataset(train_, data_root, param, transforms=get_train_transforms(), output_label=True, one_hot_label=False, do_fmix=False, do_cutmix=False)

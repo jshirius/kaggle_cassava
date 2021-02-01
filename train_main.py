@@ -70,7 +70,8 @@ CFG = {
     'tta': 4, #Inference用 どこの
     'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか 0始まり
     'weights': [1,1,1] ,#Inference用比率
-    "noisy_label_csv" :"./src/data/noisy_label.csv" #ノイズラベル修正用のcsvファイルの場所(ノイズ補正しない場合は空白にする)
+    "noisy_label_csv" :"./src/data/noisy_label.csv", #ノイズラベル修正用のcsvファイルの場所(ノイズ補正しない場合は空白にする)
+    "append_data":"../input/cassava_append_data"
 }
 
 def get_train_transforms():
@@ -145,6 +146,21 @@ if __name__ == '__main__':
         train["label"] = noisy_label["guess_label"]
         print("train label clean change")
 
+    #追加画像を読み込む
+    append_data_dict = None
+    if(len(CFG["append_data"]) > 0):
+        #訓練データ追加
+        p = CFG["append_data"] + "/" + "mix_train.csv"
+        append_df = pd.read_csv(p)
+        print(append_df)
+        train = pd.concat([train, append_df])
+        train = train.reset_index(drop=True)
+
+        #image_path, exist_name
+        append_data_dict = {}
+        append_data_dict['image_path'] = CFG["append_data"] + "/" + "mixup_alpha_1"
+        append_data_dict['exist_name'] = "mix"
+
 
     if(CFG["train_mode"] == True):
         #ラベルを元に分ける
@@ -162,7 +178,7 @@ if __name__ == '__main__':
             print(len(trn_idx), len(val_idx))
 
             #データのローダーを設定する
-            train_loader, val_loader = prepare_dataloader(train, trn_idx, val_idx, CFG, get_train_transforms, get_valid_transforms,  data_root='../input/cassava-leaf-disease-classification/train_images/')
+            train_loader, val_loader = prepare_dataloader(train, trn_idx, val_idx, CFG, get_train_transforms, get_valid_transforms,  data_root='../input/cassava-leaf-disease-classification/train_images/', append_data_dict = append_data_dict)
 
 
             #画像を表示する(デバッグ用普段はコメント化)
