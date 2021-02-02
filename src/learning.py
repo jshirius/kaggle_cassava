@@ -70,7 +70,7 @@ def valid_one_epoch(epoch, config, model,loss_fn, val_loader, device, scheduler=
     image_targets_all = []
     
     pbar = tqdm(enumerate(val_loader), total=len(val_loader))
-    for step, (imgs, image_labels) in pbar:
+    for step, (imgs, image_labels, file_names) in pbar:
         imgs = imgs.to(device).float()
         image_labels = image_labels.to(device).long()
         
