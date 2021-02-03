@@ -25,7 +25,7 @@ def get_criterion(config):
     elif config["criterion"] =='BiTemperedLoss': 
         criterion = BiTemperedLogisticLoss(t1=CFG.t1, t2=CFG.t2, smoothing=CFG.smoothing)
     elif config["criterion"] =='TaylorCrossEntropyLoss':
-        criterion = TaylorCrossEntropyLoss(smoothing=CFG.smoothing)
+        criterion = TaylorCrossEntropyLoss(smoothing=config['smoothing'])
     return criterion
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
