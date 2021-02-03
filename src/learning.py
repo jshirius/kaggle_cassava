@@ -7,9 +7,26 @@ from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 import pandas as pd
 from src.data_set import TestDataset, LABEL_NUM
-from src.model.train_model import CassvaImgClassifier
+from src.model.train_model import CassvaImgClassifier, LabelSmoothingLoss, TaylorCrossEntropyLoss
 import os
 
+
+def get_criterion(config):
+    if config["criterion"] =='CrossEntropyLoss':
+        criterion = nn.CrossEntropyLoss()
+    elif config["criterion"] =='LabelSmoothing':
+        criterion = LabelSmoothingLoss(classes=config['target_size'], smoothing=config['smoothing'])
+    elif config["criterion"] =='FocalLoss':
+        criterion = FocalLoss().to(device)
+    elif config["criterion"] =='FocalCosineLoss':
+        criterion = FocalCosineLoss()
+    elif config["criterion"] =='SymmetricCrossEntropyLoss':
+        criterion = SymmetricCrossEntropy().to(device)
+    elif config["criterion"] =='BiTemperedLoss': 
+        criterion = BiTemperedLogisticLoss(t1=CFG.t1, t2=CFG.t2, smoothing=CFG.smoothing)
+    elif config["criterion"] =='TaylorCrossEntropyLoss':
+        criterion = TaylorCrossEntropyLoss(smoothing=CFG.smoothing)
+    return criterion
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 #訓練
@@ -18,8 +35,8 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
 
     t = time.time()
     running_loss = None
-
     scaler = GradScaler()   
+
 
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
     for step, (imgs, image_labels, file_names) in pbar:

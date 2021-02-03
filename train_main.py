@@ -4,7 +4,7 @@
 from src.utils import set_seed
 from src.data_set import prepare_dataloader
 from src.model.train_model import CassvaImgClassifier
-from src.learning import train_one_epoch, valid_one_epoch, inference_single
+from src.learning import train_one_epoch, valid_one_epoch, inference_single, get_criterion
 
 
 from sklearn.model_selection import GroupKFold, StratifiedKFold
@@ -71,7 +71,11 @@ CFG = {
     'used_epochs': [4, 5, 6], #Inference用 どこのepocheを使うか 0始まり
     'weights': [1,1,1] ,#Inference用比率
     "noisy_label_csv" :"./src/data/noisy_label.csv", #ノイズラベル修正用のcsvファイルの場所(ノイズ補正しない場合は空白にする)
-    "append_data":"../input/cassava_append_data"
+    "append_data":"", #  "../input/cassava_append_data",
+    "criterion":'LabelSmoothing', # ['CrossEntropyLoss', LabelSmoothing', 'FocalLoss' 'FocalCosineLoss', 'SymmetricCrossEntropyLoss', 'BiTemperedLoss', 'TaylorCrossEntropyLoss'] 損失関数のアルゴリズム
+    "smoothing": 0.05,#LabelSmoothingの値
+    "target_size":5, #ラベルの数
+
 }
 
 def get_train_transforms():
@@ -208,8 +212,14 @@ if __name__ == '__main__':
             #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer=optimizer, pct_start=0.1, div_factor=25, 
             #                                                max_lr=CFG['lr'], epochs=CFG['epochs'], steps_per_epoch=len(train_loader))
             
-            loss_tr = nn.CrossEntropyLoss().to(device) #MyCrossEntropyLoss().to(device)
-            loss_fn = nn.CrossEntropyLoss().to(device)
+            #損失関数の取得
+            criterion = get_criterion(CFG)
+            print(f'Criterion: {criterion}')   
+
+            loss_tr = criterion.to(device)
+            loss_fn = criterion.to(device)
+            #loss_tr = nn.CrossEntropyLoss().to(device) #MyCrossEntropyLoss().to(device)
+            #loss_fn = nn.CrossEntropyLoss().to(device)
             
             best_accuracy = 0
             for epoch in range(CFG['epochs']):
