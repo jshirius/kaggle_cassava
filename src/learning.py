@@ -176,7 +176,7 @@ def inference_single(model_name, model_root_path, param, transform):
         device = torch.device(param['device'])
         model = CassvaImgClassifier(model_name, LABEL_NUM).to(device)
         
-        tst_preds = []
+        #tst_preds = []
         
         for i, epoch in enumerate(param['used_epochs']):    
             
