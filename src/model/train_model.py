@@ -106,7 +106,7 @@ class CassvaImgClassifier(nn.Module):
         super().__init__()
         self.model = timm.create_model(model_arch, pretrained=pretrained, drop_rate= drop_rate)
 
-        if("resnext50_32x4d" in model_arch):
+        if("resnext" in model_arch):
             #resnextの場合
             n_features = self.model.fc.in_features
             self.model.fc = nn.Linear(n_features, n_class)
