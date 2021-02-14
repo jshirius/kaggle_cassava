@@ -4,7 +4,7 @@
 from src.utils import set_seed
 from src.data_set import prepare_dataloader
 from src.model.train_model import CassvaImgClassifier
-from src.learning import train_one_epoch, valid_one_epoch, inference_single, get_criterion, CutMixCollator
+from src.learning import train_one_epoch, valid_one_epoch, inference_single, get_criterion, CutMixCollator, cutmix_single
 
 
 from sklearn.model_selection import GroupKFold, StratifiedKFold
@@ -66,7 +66,7 @@ CFG = {
     'debug': True,
     'train_mode' :True,
     'collate' :None, #mixcutのときに使用する
-    'use_cutmix':False, # cutmixを使うか(cutmixは未完成)
+    'use_cutmix':True, # cutmixを使うか(cutmixは未完成)
     'inference_mode' :True, #internetONだと提出できないので注意が必要
     'inference_model_path' : "./", #推論時のモデルパス
     'tta': 4, #Inference用 どこの
@@ -191,6 +191,9 @@ if __name__ == '__main__':
             print(len(trn_idx), len(val_idx))
 
             #損失関数の取得
+            criterion = get_criterion(CFG)
+            val_criterion = criterion
+            """
             if(CFG["use_cutmix"] == True):
                 #cutmixの設定(未完成)
                 CFG["collator"] = CutMixCollator()
@@ -199,6 +202,7 @@ if __name__ == '__main__':
             else:
                 criterion = get_criterion(CFG)
                 val_criterion = criterion
+            """
                 
 
             print(f'Criterion: {criterion}')   

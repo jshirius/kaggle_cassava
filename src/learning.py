@@ -3,6 +3,7 @@
 import time
 from tqdm import tqdm
 import torch
+from torch import nn
 from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 import pandas as pd
@@ -31,6 +32,40 @@ def get_criterion(config, criterion_name=""):
     elif criterion_name == 'CutMix':
         criterion = CutMixCriterion(get_criterion(config["criterion"]))        
     return criterion
+
+
+def rand_bbox(size, lam):
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = np.int(W * cut_rat)
+    cut_h = np.int(H * cut_rat)
+
+    # uniform
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+    return bbx1, bby1, bbx2, bby2
+
+def cutmix_single(data, target, alpha):
+    indices = torch.randperm(data.size(0))
+    shuffled_data = data[indices]
+    shuffled_target = target[indices]
+
+    lam = np.clip(np.random.beta(alpha, alpha),0.3,0.4)
+    bbx1, bby1, bbx2, bby2 = rand_bbox(data.size(), lam)
+    new_data = data.clone()
+    new_data[:, :, bby1:bby2, bbx1:bbx2] = data[indices, :, bby1:bby2, bbx1:bbx2]
+    # adjust lambda to exactly match pixel ratio
+    lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (data.size()[-1] * data.size()[-2]))
+    targets = (target, shuffled_target, lam)
+
+    return new_data, targets
+
 
 def cutmix(batch):
 
@@ -104,13 +139,29 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
         imgs = imgs.to(device).float()
         image_labels = image_labels.to(device).long()
 
+        #cutmixの対応
+        use_cutmix = False
+        if("use_cutmix" in config  and config["use_cutmix"] == True):
+            mix_decision = np.random.rand()
+            #mix_decision = 0.1
+            if(mix_decision < 0.25):
+                t = "use_cutmix  step:%d" % step
+                print(t)
+                imgs, image_labels = cutmix_single(imgs, image_labels, 1.)
+                use_cutmix = True
+
         #print(image_labels.shape, exam_label.shape)
         with autocast():
             image_preds = model(imgs)   #output = model(input)
             #print(image_preds.shape)
 
-            loss = loss_fn(image_preds, image_labels)
-            
+            #loss = loss_fn(image_preds, image_labels)
+            if(use_cutmix == True):
+                #cutmix用
+                loss = loss_fn(image_preds, image_labels[0]) * image_labels[2] + loss_fn(image_preds, image_labels[1]) * (1. - image_labels[2])
+            else:
+                loss = loss_fn(image_preds, image_labels)
+
             scaler.scale(loss).backward()
 
             if running_loss is None:
