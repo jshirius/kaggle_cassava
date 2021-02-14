@@ -94,6 +94,7 @@ def prepare_dataloader(df, trn_idx, val_idx, param:dict, get_train_transforms, g
         drop_last=False,
         shuffle=True,        
         num_workers=param['num_workers'],
+        collate_fn=param['collate'], #cutmixのために追加
         #sampler=BalanceClassSampler(labels=train_['label'].values, mode="downsampling")
     )
     val_loader = torch.utils.data.DataLoader(

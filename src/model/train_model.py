@@ -60,7 +60,6 @@ class TaylorSoftmax(nn.Module):
         out = fn / fn.sum(dim=self.dim, keepdims=True)
         return out
 
-    
 class TaylorCrossEntropyLoss(nn.Module):
     def __init__(self, n=2, ignore_index=-1, reduction='mean', smoothing=0.05):
         super(TaylorCrossEntropyLoss, self).__init__()
@@ -79,6 +78,42 @@ class TaylorCrossEntropyLoss(nn.Module):
         #        ignore_index=self.ignore_index)
         loss = self.lab_smooth(log_probs, labels)
         return loss
+
+class TaylorSmoothedLoss(nn.Module):
+    
+    def __init__(self, n=2, ignore_index=-1, reduction='mean', smoothing=0.2):
+        super(TaylorSmoothedLoss, self).__init__()
+        assert n % 2 == 0
+        self.taylor_softmax = TaylorSoftmax(dim=1, n=n)
+        self.reduction = reduction
+        self.ignore_index = ignore_index
+        #ラベルは５つと決まっているので5にした
+        self.lab_smooth = LabelSmoothingLoss(5, smoothing=smoothing)
+
+    def forward(self, logits, labels):
+
+        log_probs = self.taylor_softmax(logits).log()
+        #loss = F.nll_loss(log_probs, labels, reduction=self.reduction,
+        #        ignore_index=self.ignore_index)
+        loss = self.lab_smooth(log_probs, labels)
+        return loss
+        
+
+
+#From    
+#https://www.kaggle.com/capiru/cassavanet-cutmix-implementation-cv-0-9
+class CutMixCriterion(nn.Module):
+    def __init__(self, criterion):
+        super(CutMixCriterion, self).__init__()
+        self.criterion = criterion
+
+    def forward(self, preds, targets):
+        targets1 = targets[:,0]
+        targets2 = targets[:,1]
+        lam = targets[0,2]
+        return lam * self.criterion.forward(
+            preds, targets1) + (1 - lam) * self.criterion.forward(preds, targets2)
+
 
 # ====================================================
 # MODEL　ResNext

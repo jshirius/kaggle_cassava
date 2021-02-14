@@ -7,11 +7,11 @@ from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 import pandas as pd
 from src.data_set import TestDataset, LABEL_NUM
-from src.model.train_model import CassvaImgClassifier, LabelSmoothingLoss, TaylorCrossEntropyLoss
+from src.model.train_model import CassvaImgClassifier, LabelSmoothingLoss, TaylorCrossEntropyLoss, CutMixCriterion, TaylorSmoothedLoss
 import os
 
 
-def get_criterion(config):
+def get_criterion(config, criterion_name=""):
     if config["criterion"] =='CrossEntropyLoss':
         criterion = nn.CrossEntropyLoss()
     elif config["criterion"] =='LabelSmoothing':
@@ -26,7 +26,68 @@ def get_criterion(config):
         criterion = BiTemperedLogisticLoss(t1=CFG.t1, t2=CFG.t2, smoothing=CFG.smoothing)
     elif config["criterion"] =='TaylorCrossEntropyLoss':
         criterion = TaylorCrossEntropyLoss(smoothing=config['smoothing'])
+    elif config["criterion"] =='TaylorSmoothedLoss':
+        criterion = TaylorSmoothedLoss(smoothing=config['smoothing'])
+    elif criterion_name == 'CutMix':
+        criterion = CutMixCriterion(get_criterion(config["criterion"]))        
     return criterion
+
+def cutmix(batch):
+
+    #print(batch[0])
+    #print(batch[0][2])
+ 
+
+    img_size = 512 #ハードコーディング
+
+    batch_size = len(batch)
+    data = np.zeros((batch_size, 3, img_size, img_size))
+    targets = np.zeros((batch_size))
+    file_names = [""] * batch_size
+    for i in range(batch_size):
+        data[i,:,:,:] = batch[i][0]
+        targets[i] = batch[i][1]
+        file_names[i] = batch[i][2]
+
+    indices = torch.randperm(batch_size)
+    shuffled_data = data[indices]
+    shuffled_targets = targets[indices]
+    
+
+    lam = np.random.beta(1 , 1)
+
+    image_h, image_w = data.shape[2:]
+    cx = np.random.uniform(0, image_w)
+    cy = np.random.uniform(0, image_h)
+    w = image_w * np.sqrt(1 - lam)
+    h = image_h * np.sqrt(1 - lam)
+    x0 = int(np.round(max(cx - w / 2, 0)))
+    x1 = int(np.round(min(cx + w / 2, image_w)))
+    y0 = int(np.round(max(cy - h / 2, 0)))
+    y1 = int(np.round(min(cy + h / 2, image_h)))
+
+    data[:, :, y0:y1, x0:x1] = shuffled_data[:, :, y0:y1, x0:x1]
+    return_targets = torch.zeros((batch_size,3),dtype=torch.int64)
+    return_targets[:,0] = torch.from_numpy(targets)
+    return_targets[:,1] = torch.from_numpy(shuffled_targets)
+    return_targets[0,2] = lam
+
+    #print(return_targets)
+    #return_filename = torch.zeros((batch_size,3),dtype=torch.int64)
+    #return_filename[:,0] = torch.from_numpy(file_names)
+    #return_filename[:,1] = torch.from_numpy(shuffled_file_names)
+    #return_filename[0,2] = lam
+
+    #file_namesはダミー
+
+    return torch.from_numpy(data), return_targets, file_names
+        
+class CutMixCollator:
+    def __call__(self, batch):
+        #batch = torch.utils.data.dataloader.default_collate(batch)
+        batch = cutmix(batch)
+        return batch
+
 
 #https://www.kaggle.com/takiyu/pytorch-efficientnet-baseline-train-amp-aug
 #訓練

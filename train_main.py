@@ -4,7 +4,7 @@
 from src.utils import set_seed
 from src.data_set import prepare_dataloader
 from src.model.train_model import CassvaImgClassifier
-from src.learning import train_one_epoch, valid_one_epoch, inference_single, get_criterion
+from src.learning import train_one_epoch, valid_one_epoch, inference_single, get_criterion, CutMixCollator
 
 
 from sklearn.model_selection import GroupKFold, StratifiedKFold
@@ -65,6 +65,8 @@ CFG = {
     'device': 'cpu', #ローカルPCのときの設定
     'debug': True,
     'train_mode' :True,
+    'collate' :None, #mixcutのときに使用する
+    'use_cutmix':False, # cutmixを使うか(cutmixは未完成)
     'inference_mode' :True, #internetONだと提出できないので注意が必要
     'inference_model_path' : "./", #推論時のモデルパス
     'tta': 4, #Inference用 どこの
@@ -72,7 +74,7 @@ CFG = {
     'weights': [1,1,1] ,#Inference用比率
     "noisy_label_csv" :"./src/data/noisy_label.csv", #ノイズラベル修正用のcsvファイルの場所(ノイズ補正しない場合は空白にする)
     "append_data":"", #  "../input/cassava_append_data",
-    "criterion":'LabelSmoothing', # ['CrossEntropyLoss', LabelSmoothing', 'FocalLoss' 'FocalCosineLoss', 'SymmetricCrossEntropyLoss', 'BiTemperedLoss', 'TaylorCrossEntropyLoss'] 損失関数のアルゴリズム
+    "criterion":'TaylorSmoothedLoss', # ['CrossEntropyLoss', LabelSmoothing', 'FocalLoss' 'FocalCosineLoss', 'SymmetricCrossEntropyLoss', 'BiTemperedLoss', 'TaylorCrossEntropyLoss',"TaylorSmoothedLoss"] 損失関数のアルゴリズム
     "smoothing": 0.05,#LabelSmoothingの値
     "target_size":5, #ラベルの数
 
@@ -88,7 +90,11 @@ def get_train_transforms():
             HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5), #色彩などを変更する
             RandomBrightnessContrast(brightness_limit=(-0.1,0.1), contrast_limit=(-0.1, 0.1), p=0.5), # 輝度
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], max_pixel_value=255.0, p=1.0), #ピクセル値を255 = 2 ** 8-1で除算し、チャネルごとの平均を減算し、チャネルごとのstdで除算します
-            CoarseDropout(p=0.5),#粗いドロップアウト
+            #CoarseDropout(p=0.5),#粗いドロップアウト
+            CoarseDropout(max_holes=12, max_height=int(0.11*CFG['img_size']), max_width=int(0.11*CFG['img_size']),
+                            min_holes=1, min_height=int(0.03*CFG['img_size']), min_width=int(0.03*CFG['img_size']),
+                            always_apply=False, p=0.5),
+            #RandomCrop(height= CFG.HEIGHT, width = CFG.WIDTH,always_apply=True, p=1.0)         
             Cutout(p=0.5),
             ToGray(p=0.01), #これを反映させたほうがスコアが上がる 0.001上がった
             ToTensorV2(p=1.0),
@@ -171,6 +177,9 @@ if __name__ == '__main__':
         folds = StratifiedKFold(n_splits=CFG['fold_num'], shuffle=True, random_state=CFG['seed']).split(np.arange(train.shape[0]), train.label.values)
         print(folds)
 
+        #デバイス情報取得
+        device = torch.device(CFG['device'])
+
         for fold, (trn_idx, val_idx) in enumerate(folds):
 
             # we'll train fold 0 first
@@ -180,6 +189,27 @@ if __name__ == '__main__':
             print('Training with {} started'.format(fold))
 
             print(len(trn_idx), len(val_idx))
+
+            #損失関数の取得
+            if(CFG["use_cutmix"] == True):
+                #cutmixの設定(未完成)
+                CFG["collator"] = CutMixCollator()
+                criterion = get_criterion(CFG, 'CutMix')
+                val_criterion = get_criterion(CFG)
+            else:
+                criterion = get_criterion(CFG)
+                val_criterion = criterion
+                
+
+            print(f'Criterion: {criterion}')   
+            loss_tr = criterion.to(device)
+            loss_fn = val_criterion.to(device)
+            #loss_tr = nn.CrossEntropyLoss().to(device) #MyCrossEntropyLoss().to(device)
+            #loss_fn = nn.CrossEntropyLoss().to(device)
+
+            #train_loader,val_loader,scaler = get_loaders(dev=CFG.device,train_set=train_set,val_set=val_set)
+
+
 
             #データのローダーを設定する
             train_loader, val_loader = prepare_dataloader(train, trn_idx, val_idx, CFG, get_train_transforms, get_valid_transforms,  data_root='../input/cassava-leaf-disease-classification/train_images/', append_data_dict = append_data_dict)
@@ -197,7 +227,7 @@ if __name__ == '__main__':
 
             #print(train_data)
 
-            device = torch.device(CFG['device'])
+            
             
             ###########################
             #モデルの読み込み
@@ -212,15 +242,7 @@ if __name__ == '__main__':
             #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer=optimizer, pct_start=0.1, div_factor=25, 
             #                                                max_lr=CFG['lr'], epochs=CFG['epochs'], steps_per_epoch=len(train_loader))
             
-            #損失関数の取得
-            criterion = get_criterion(CFG)
-            print(f'Criterion: {criterion}')   
 
-            loss_tr = criterion.to(device)
-            loss_fn = criterion.to(device)
-            #loss_tr = nn.CrossEntropyLoss().to(device) #MyCrossEntropyLoss().to(device)
-            #loss_fn = nn.CrossEntropyLoss().to(device)
-            
             best_accuracy = 0
             for epoch in range(CFG['epochs']):
 
