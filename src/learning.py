@@ -10,6 +10,7 @@ import pandas as pd
 from src.data_set import TestDataset, LABEL_NUM
 from src.model.train_model import CassvaImgClassifier, LabelSmoothingLoss, TaylorCrossEntropyLoss, CutMixCriterion, TaylorSmoothedLoss
 import os
+from fmix import sample_mask
 
 
 def get_criterion(config, criterion_name=""):
@@ -65,6 +66,17 @@ def cutmix_single(data, target, alpha):
     targets = (target, shuffled_target, lam)
 
     return new_data, targets
+
+def fmix(device, data, targets, alpha, decay_power, shape, max_soft=0.0, reformulate=False):
+    lam, mask = sample_mask(alpha, decay_power, shape, max_soft, reformulate)
+    indices = torch.randperm(data.size(0))
+    shuffled_data = data[indices]
+    shuffled_targets = targets[indices]
+    x1 = torch.from_numpy(mask).to(device)*data
+    x2 = torch.from_numpy(1-mask).to(device)*shuffled_data
+    targets=(targets, shuffled_targets, lam)
+    
+    return (x1+x2), targets
 
 
 def cutmix(batch):
@@ -146,13 +158,18 @@ def train_one_epoch(epoch, config, model, loss_fn, optimizer, train_loader, devi
             #mix_decision = 0.1
             if(mix_decision < 0.25):
                 t = "use_cutmix  step:%d" % step
-                print(t)
+                #print(t)
                 imgs, image_labels = cutmix_single(imgs, image_labels, 1.)
+                use_cutmix = True
+            elif(mix_decision >=0.25 and mix_decision < 0.5):
+                t = "use_fmix  step:%d" % step
+                #print(t)
+                imgs, image_labels = fmix(device, imgs, image_labels, alpha=1., decay_power=5., shape=(512,512))
                 use_cutmix = True
 
         #print(image_labels.shape, exam_label.shape)
         with autocast():
-            image_preds = model(imgs)   #output = model(input)
+            image_preds = model(imgs.float())   #output = model(input)
             #print(image_preds.shape)
 
             #loss = loss_fn(image_preds, image_labels)

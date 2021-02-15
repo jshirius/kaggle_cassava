@@ -1,6 +1,17 @@
 # ====================================================
 # メイン処理
 # ====================================================
+
+package_path = './FMix-master'
+import sys; sys.path.append(package_path)
+
+"""
+import sys
+package_path = '../input/pytorch-image-models/pytorch-image-models-master' #'../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
+sys.path.append(package_path)
+"""
+
+
 from src.utils import set_seed
 from src.data_set import prepare_dataloader
 from src.model.train_model import CassvaImgClassifier
@@ -33,11 +44,9 @@ from albumentations import (
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 
-"""
-import sys
-package_path = '../input/pytorch-image-models/pytorch-image-models-master' #'../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
-sys.path.append(package_path)
-"""
+
+
+
 
 #import sys
 #sys.path.insert(0,"fmix") 
